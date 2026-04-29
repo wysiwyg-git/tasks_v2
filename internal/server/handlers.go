@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -15,9 +14,11 @@ import (
 )
 
 func (s *Server) GetTasks(w http.ResponseWriter, r *http.Request) {
+	logger := GetLogger(r.Context())
+
 	tasks, err := s.Store.GetAllTasks(r.Context())
 	if err != nil {
-		log.Printf("ERROR: failed to get tasks: %v", err)
+		logger.Error("failed to get tasks", "error", err)
 		http.Error(w, "Internal error", http.StatusInternalServerError)
 		return
 	}
@@ -26,9 +27,11 @@ func (s *Server) GetTasks(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetTaskByID(w http.ResponseWriter, r *http.Request) {
+	logger := GetLogger(r.Context())
+
 	id, err := parseIDFromURL(r)
 	if err != nil {
-		log.Printf("ERROR: failed to parse task ID %s: %v", r.URL.Path, err)
+		logger.Error("failed to parse task ID", "error", err)
 		http.Error(w, "task not found", http.StatusNotFound)
 		return
 	}
@@ -36,7 +39,7 @@ func (s *Server) GetTaskByID(w http.ResponseWriter, r *http.Request) {
 	task, err := s.Store.GetTaskByID(r.Context(), id)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
-			log.Printf("ERROR: failed to get task by id %d: %v", id, err)
+			logger.Error("failed to get task by id", "error", err)
 			http.Error(w, "task not found", http.StatusNotFound)
 			return
 		}
@@ -48,6 +51,8 @@ func (s *Server) GetTaskByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) CreateTask(w http.ResponseWriter, r *http.Request) {
+	logger := GetLogger(r.Context())
+
 	var newTask models.Task
 	if err := json.NewDecoder(r.Body).Decode(&newTask); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
@@ -59,7 +64,7 @@ func (s *Server) CreateTask(w http.ResponseWriter, r *http.Request) {
 	}
 	task, err := s.Store.CreateTask(r.Context(), newTask.Title)
 	if err != nil {
-		log.Printf("ERROR: failed to create task: %v", err)
+		logger.Error("failed to create task", "error", err)
 		http.Error(w, "Internal error", http.StatusInternalServerError)
 		return
 	}
@@ -70,6 +75,8 @@ func (s *Server) CreateTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) UpdateTaskByID(w http.ResponseWriter, r *http.Request) {
+	logger := GetLogger(r.Context())
+
 	id, err := parseIDFromURL(r)
 	if err != nil {
 		http.Error(w, "task not found", http.StatusNotFound)
@@ -89,11 +96,11 @@ func (s *Server) UpdateTaskByID(w http.ResponseWriter, r *http.Request) {
 	task, err := s.Store.UpdateTask(r.Context(), id, newTask.Title, newTask.Done)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
-			log.Printf("ERROR: failed to get task by id %d: %v", id, err)
+			logger.Error("failed to get task by id", "error", err)
 			http.Error(w, "task not found", http.StatusNotFound)
 			return
 		}
-		log.Printf("ERROR: failed to update task: %v", err)
+		logger.Error("failed to update task", "error", err)
 		http.Error(w, "Internal error", http.StatusInternalServerError)
 		return
 	}
@@ -104,6 +111,8 @@ func (s *Server) UpdateTaskByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) DeleteTaskByID(w http.ResponseWriter, r *http.Request) {
+	logger := GetLogger(r.Context())
+
 	id, err := parseIDFromURL(r)
 	if err != nil {
 		http.Error(w, "task not found", http.StatusNotFound)
@@ -115,7 +124,7 @@ func (s *Server) DeleteTaskByID(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "task not found", http.StatusNotFound)
 			return
 		}
-		log.Printf("ERROR: failed to delete task: %v", err)
+		logger.Error("failed to delete task", "error", err)
 		http.Error(w, "Internal error", http.StatusInternalServerError)
 		return
 	}

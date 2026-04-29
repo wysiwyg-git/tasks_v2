@@ -11,7 +11,8 @@ import (
 type Config struct {
 	Port        int
 	DatabaseURL string
-	// Можно добавить уровень логирования, таймауты и т.д.
+	LogLevel    string // например, "debug" или "info"
+	LogFormat   string // "text" или "json"
 }
 
 // Load читает .env (если есть) и возвращает заполненную структуру.
@@ -32,6 +33,10 @@ func Load() (*Config, error) {
 	if cfg.Port < 1024 || cfg.Port > 65535 {
 		return nil, fmt.Errorf("invalid port: %d", cfg.Port)
 	}
+
+	cfg.LogLevel = getEnv("LOG_LEVEL", "info")
+	cfg.LogFormat = getEnv("LOG_FORMAT", "text")
+
 	return cfg, nil
 }
 

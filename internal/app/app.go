@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/wysiwyg-git/tasks_v2/internal/config"
+	"github.com/wysiwyg-git/tasks_v2/internal/logger"
 	"github.com/wysiwyg-git/tasks_v2/internal/migration"
 	"github.com/wysiwyg-git/tasks_v2/internal/server"
 	"github.com/wysiwyg-git/tasks_v2/internal/store"
@@ -24,8 +25,15 @@ func Run() error {
 		return fmt.Errorf("loading config: %w", err)
 	}
 
+	// Создаём логгер
+	appLogger := logger.New(logger.Config{
+		Level:  cfg.LogLevel,
+		Format: cfg.LogFormat,
+	})
+
 	// Запуск миграций
 	if err := migration.RunMigrations(cfg.DatabaseURL); err != nil {
+		appLogger.Error("running migrations", "error", err)
 		return fmt.Errorf("running migrations: %w", err)
 	}
 
@@ -40,7 +48,7 @@ func Run() error {
 	srv := server.NewServer(ts)
 
 	// 4. HTTP-роутер
-	r := server.NewRouter(srv)
+	r := server.NewRouter(srv, appLogger)
 
 	// 5. HTTP-сервер с таймаутами
 	httpServer := &http.Server{
@@ -56,9 +64,10 @@ func Run() error {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
-		log.Printf("Server starting on port %d", cfg.Port)
+		appLogger.Info("Server starting", "port", cfg.Port)
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen error: %v", err)
+			appLogger.Error("listen error", "error", err)
+			os.Exit(1)
 		}
 	}()
 
