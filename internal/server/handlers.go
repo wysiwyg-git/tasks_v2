@@ -13,7 +13,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func (s *Server) GetTasks(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetAllTasks(w http.ResponseWriter, r *http.Request) {
 	logger := GetLogger(r.Context())
 
 	tasks, err := s.Store.GetAllTasks(r.Context())

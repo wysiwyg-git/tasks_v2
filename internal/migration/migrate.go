@@ -2,14 +2,14 @@ package migration
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
-func RunMigrations(databaseURL string) error {
+func RunMigrations(databaseURL string, logger *slog.Logger) error {
 	m, err := migrate.New(
 		"file://db/migrations",
 		databaseURL,
@@ -22,6 +22,6 @@ func RunMigrations(databaseURL string) error {
 		return fmt.Errorf("migration failed: %w", err)
 	}
 
-	log.Println("Migrations completed successfully")
+	logger.Info("Migrations completed successfully")
 	return nil
 }

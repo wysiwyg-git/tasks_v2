@@ -91,7 +91,7 @@ func setupTestServer() http.Handler {
 	}
 	srv := &server.Server{Store: ms}
 	r := chi.NewRouter()
-	r.Get("/tasks", srv.GetTasks)
+	r.Get("/tasks", srv.GetAllTasks)
 	r.Post("/tasks", srv.CreateTask)
 	r.Get("/tasks/{id}", srv.GetTaskByID)
 	r.Put("/tasks/{id}", srv.UpdateTaskByID)
@@ -142,7 +142,7 @@ func TestGetTasksTableDriven(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			srv := &server.Server{Store: tt.setupMock()}
 			r := chi.NewRouter()
-			r.Get("/tasks", srv.GetTasks)
+			r.Get("/tasks", srv.GetAllTasks)
 
 			req := httptest.NewRequest(http.MethodGet, "/tasks", nil)
 			w := httptest.NewRecorder()

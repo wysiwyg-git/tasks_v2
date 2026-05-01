@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -13,6 +14,8 @@ type Config struct {
 	DatabaseURL string
 	LogLevel    string // например, "debug" или "info"
 	LogFormat   string // "text" или "json"
+	JWTSecret   string
+	JWTTokenTTL time.Duration
 }
 
 // Load читает .env (если есть) и возвращает заполненную структуру.
@@ -20,7 +23,7 @@ func Load() (*Config, error) {
 	// Игнорируем ошибку, если файла нет – это нормально для production
 	_ = godotenv.Load()
 
-	dbURL, err := getEnvOrFatal("DATABASE_URL")
+	dbURL, err := getEnvOrError("DATABASE_URL")
 	if err != nil {
 		return nil, err
 	}
@@ -36,6 +39,17 @@ func Load() (*Config, error) {
 
 	cfg.LogLevel = getEnv("LOG_LEVEL", "info")
 	cfg.LogFormat = getEnv("LOG_FORMAT", "text")
+
+	cfg.JWTSecret, err = getEnvOrError("JWT_SECRET")
+	if err != nil {
+		return nil, err
+	}
+	ttlStr := getEnv("JWT_TOKEN_TTL", "24h")
+	ttl, err := time.ParseDuration(ttlStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid JWT_TOKEN_TTL: %w", err)
+	}
+	cfg.JWTTokenTTL = ttl
 
 	return cfg, nil
 }
@@ -63,10 +77,10 @@ func getEnvAsInt(key string, defaultVal int) int {
 }
 
 // Для обязательных переменных
-func getEnvOrFatal(key string) (string, error) {
+func getEnvOrError(key string) (string, error) {
 	val, ok := os.LookupEnv(key)
 	if !ok || val == "" {
-		return "", fmt.Errorf("FATAL: environment variable %s is required\n", key)
+		return "", fmt.Errorf("FATAL: environment variable %s is required", key)
 	}
 	return val, nil
 }

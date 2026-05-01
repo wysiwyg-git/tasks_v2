@@ -32,7 +32,7 @@ func Run() error {
 	})
 
 	// Запуск миграций
-	if err := migration.RunMigrations(cfg.DatabaseURL); err != nil {
+	if err := migration.RunMigrations(cfg.DatabaseURL, appLogger); err != nil {
 		appLogger.Error("running migrations", "error", err)
 		return fmt.Errorf("running migrations: %w", err)
 	}
@@ -45,10 +45,10 @@ func Run() error {
 	defer ts.Close()
 
 	// 3. Слои приложения
-	srv := server.NewServer(ts)
+	srv := server.NewServer(ts, cfg.JWTSecret, cfg.JWTTokenTTL, appLogger)
 
 	// 4. HTTP-роутер
-	r := server.NewRouter(srv, appLogger)
+	r := server.NewRouter(srv)
 
 	// 5. HTTP-сервер с таймаутами
 	httpServer := &http.Server{
