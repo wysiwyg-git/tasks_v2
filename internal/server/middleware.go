@@ -13,8 +13,8 @@ import (
 
 type contextKey string
 
-const requestIDKey contextKey = "requestID"
-const userClaimsKey = contextKey("userClaims")
+const RequestIDKey contextKey = "requestID"
+const UserClaimsKey = contextKey("userClaims")
 
 // RequestIDMiddleware — middleware для chi, который внедряет Request ID.
 func RequestIDMiddleware(logger *slog.Logger) func(http.Handler) http.Handler {
@@ -25,7 +25,7 @@ func RequestIDMiddleware(logger *slog.Logger) func(http.Handler) http.Handler {
 				id = uuid.New().String()
 			}
 			// Кладём в контекст
-			ctx := context.WithValue(r.Context(), requestIDKey, id)
+			ctx := context.WithValue(r.Context(), RequestIDKey, id)
 			// Кладём в логгер, чтобы он был доступен обработчикам
 			loggerWithID := logger.With(slog.String("request_id", id))
 			ctx = context.WithValue(ctx, loggerKey{}, loggerWithID) // нужно определить loggerKey
@@ -64,7 +64,7 @@ func JWTAuthMiddleware(secret string, logger *slog.Logger) func(http.Handler) ht
 				return
 			}
 			// Добавляем claims в контекст
-			ctx := context.WithValue(r.Context(), userClaimsKey, claims)
+			ctx := context.WithValue(r.Context(), UserClaimsKey, claims)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

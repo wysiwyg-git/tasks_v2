@@ -16,13 +16,48 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+var errUserExists = errors.New("user already exists")
+
 type mockStore struct {
-	tasks      []models.Task
-	nextID     int
-	failGetAll bool
-	failCreate bool
-	failUpdate bool
-	failDelete bool
+	tasks          []models.Task
+	nextID         int
+	failGetAll     bool
+	failCreate     bool
+	failUpdate     bool
+	failDelete     bool
+	users          map[string]*store.User // username -> User
+	failCreateUser bool
+}
+
+func newMockStore() *mockStore {
+	return &mockStore{
+		tasks: make([]models.Task, 0),
+		users: make(map[string]*store.User),
+	}
+}
+
+func (m *mockStore) CreateUser(ctx context.Context, username, passwordHash string) (*store.User, error) {
+	if m.failCreateUser {
+		return nil, errors.New("create user error")
+	}
+	if _, exists := m.users[username]; exists {
+		return nil, errUserExists
+	}
+	user := &store.User{
+		ID:           len(m.users) + 1,
+		Username:     username,
+		PasswordHash: passwordHash,
+	}
+	m.users[username] = user
+	return user, nil
+}
+
+func (m *mockStore) GetUserByUsername(ctx context.Context, username string) (*store.User, error) {
+	user, ok := m.users[username]
+	if !ok {
+		return nil, nil // пользователь не найден, но ошибки нет
+	}
+	return user, nil
 }
 
 func (m *mockStore) GetAllTasks(ctx context.Context) ([]models.Task, error) {
